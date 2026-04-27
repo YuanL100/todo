@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo · 待办事项</title>
+  <style>
+    /* ============================================================
+       全局重置 & 基础
+       ============================================================ */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #5b6ef7;
+      --primary-hover: #4a5de0;
+      --primary-light: #eef0ff;
+      --danger: #f26b6b;
+      --danger-hover: #e55555;
+      --bg: #f4f5f9;
+      --card-bg: #ffffff;
+      --text: #1e1e2e;
+      --text-secondary: #6b6f82;
+      --text-muted: #b0b3c0;
+      --border: #eaeaef;
+      --radius: 12px;
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    /* ============================================================
+       主卡片容器
+       ============================================================ */
+    .app {
+      width: 100%;
+      max-width: 560px;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px 24px;
+      align-self: flex-start;
+    }
+
+    /* ============================================================
+       头部
+       ============================================================ */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .app-header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .app-header h1 span { color: var(--primary); }
+
+    .app-header .count-badge {
+      font-size: 13px;
+      color: var(--text-muted);
+      background: var(--bg);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    /* ============================================================
+       输入区域
+       ============================================================ */
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .input-group input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-group input:focus {
+      border-color: var(--primary);
+    }
+
+    .input-group input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .input-group button {
+      padding: 12px 22px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+
+    .input-group button:hover { background: var(--primary-hover); }
+    .input-group button:active { transform: scale(0.96); }
+
+    /* ============================================================
+       筛选标签栏
+       ============================================================ */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 4px;
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 3px;
+    }
+
+    .tabs button {
+      flex: 1;
+      padding: 8px 0;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tabs button:hover { color: var(--text); }
+    .tabs button.active {
+      background: #fff;
+      color: var(--primary);
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+      font-weight: 600;
+    }
+
+    /* ============================================================
+       统计栏
+       ============================================================ */
+    .stats {
+      font-size: 13px;
+      color: var(--text-muted);
+      padding: 12px 4px 4px;
+      min-height: 32px;
+    }
+
+    /* ============================================================
+       任务列表
+       ============================================================ */
+    .todo-list {
+      list-style: none;
+      min-height: 60px;
+    }
+
+    .todo-list .empty {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+      padding: 48px 0 36px;
+    }
+
+    .todo-list .empty em {
+      font-style: normal;
+      font-size: 28px;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    /* ---- 单个任务项 ---- */
+    .todo-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 8px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+
+    .todo-item:last-of-type { border-bottom: none; }
+    .todo-item:hover { background: #fafafe; }
+
+    /* 自定义复选框 — 勾选动画 */
+    .todo-item .check {
+      width: 22px;
+      height: 22px;
+      border: 2px solid #d0d3de;
+      border-radius: 6px;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .todo-item .check:hover { border-color: var(--primary); }
+
+    .todo-item .check.done {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    /* 勾号 SVG — 确保在任何系统上都显示正确 */
+    .todo-item .check.done::after {
+      content: "";
+      display: block;
+      width: 6px;
+      height: 10px;
+      border: solid #fff;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg) translateY(-1px);
+    }
+
+    /* 标题 */
+    .todo-item .title {
+      flex: 1;
+      font-size: 15px;
+      word-break: break-word;
+      line-height: 1.4;
+    }
+
+    .todo-item .title.done {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    /* 时间戳 */
+    .todo-item .time {
+      font-size: 11px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    /* 删除按钮 */
+    .todo-item .del {
+      width: 30px;
+      height: 30px;
+      border: none;
+      background: transparent;
+      color: #d0d3de;
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+      border-radius: 8px;
+      flex-shrink: 0;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .todo-item .del:hover {
+      background: #fef0f0;
+      color: var(--danger);
+    }
+
+    /* ---- 分组分割标题（全部模式） ---- */
+    .group-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      padding: 16px 8px 6px;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: 0.3px;
+    }
+
+    /* ============================================================
+       底部操作栏
+       ============================================================ */
+    .app-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .app-footer .count {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .app-footer .clear-done {
+      padding: 6px 16px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .app-footer .clear-done:hover {
+      background: #fef0f0;
+      color: var(--danger);
+    }
+
+    /* ============================================================
+       响应式 — 手机适配
+       ============================================================ */
+    @media (max-width: 480px) {
+      body { padding: 16px 12px; }
+      .app { padding: 20px 16px; }
+      .input-group { flex-direction: column; }
+      .input-group button { width: 100%; padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===== 头部 ===== -->
+  <header class="app-header">
+    <h1>TODO<span>.</span></h1>
+    <span class="count-badge" id="badge">0</span>
+  </header>
+
+  <!-- ===== 输入 ===== -->
+  <div class="input-group">
+    <input type="text" id="input" placeholder="写点什么… 回车添加" autofocus>
+    <button id="addBtn">添加</button>
+  </div>
+
+  <!-- ===== 筛选 ===== -->
+  <div class="tabs" id="tabs">
+    <button class="active" data-filter="all">全部</button>
+    <button data-filter="undo">未完成</button>
+    <button data-filter="done">已完成</button>
+  </div>
+  <div class="stats" id="stats"></div>
+
+  <!-- ===== 列表 ===== -->
+  <ul class="todo-list" id="list"></ul>
+
+  <!-- ===== 底部 ===== -->
+  <footer class="app-footer">
+    <span class="count" id="footerCount"></span>
+    <button class="clear-done" id="clearDone">清除已完成</button>
+  </footer>
+
+</div>
+
+<script>
+  /* ============================================================
+     一、数据层 — Data
+       职责：localStorage 读写，与 UI 完全无关
+     ============================================================ */
+  const Data = {
+    KEY: "todo_app_v2",
+
+    /** 读取全部任务 */
+    load() {
+      try {
+        return JSON.parse(localStorage.getItem(this.KEY)) || [];
+      } catch { return []; }
+    },
+
+    /** 保存全部任务 */
+    save(todos) {
+      localStorage.setItem(this.KEY, JSON.stringify(todos));
+    },
+
+    /** 生成短 ID：时间戳 + 随机数，8 位 */
+    uid() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    },
+  };
+
+
+  /* ============================================================
+     二、业务层 — Service
+       职责：任务增删改查、筛选，不碰 DOM
+     ============================================================ */
+  const Service = {
+    todos: [],       // 内存中的全量数据
+    filter: "all",   // 当前筛选：all / undo / done
+
+    /** 启动时加载数据 */
+    init() { this.todos = Data.load(); },
+
+    /** 新增 */
+    add(title) {
+      const t = {
+        id: Data.uid(),
+        title: title.trim(),
+        done: false,
+        createdAt: new Date().toLocaleString("zh-CN"),
+      };
+      this.todos.unshift(t);
+      Data.save(this.todos);
+      return t;
+    },
+
+    /** 切换完成状态 */
+    toggle(id) {
+      const t = this.todos.find(t => t.id === id);
+      if (t) { t.done = !t.done; Data.save(this.todos); }
+    },
+
+    /** 删除 */
+    remove(id) {
+      this.todos = this.todos.filter(t => t.id !== id);
+      Data.save(this.todos);
+    },
+
+    /** 清空已完成 */
+    clearDone() {
+      this.todos = this.todos.filter(t => !t.done);
+      Data.save(this.todos);
+    },
+
+    /** 设置筛选 */
+    setFilter(f) { this.filter = f; },
+
+    /** 获取当前筛选后的列表 */
+    getFiltered() {
+      if (this.filter === "undo") return this.todos.filter(t => !t.done);
+      if (this.filter === "done") return this.todos.filter(t => t.done);
+      return this.todos;
+    },
+
+    get total() { return this.todos.length; },
+    get undone() { return this.todos.filter(t => !t.done).length; },
+    get doneCount() { return this.todos.filter(t => t.done).length; },
+  };
+
+
+  /* ============================================================
+     三、视图层 — View
+       职责：DOM 操作、渲染、事件绑定，调 Service 完成操作
+     ============================================================ */
+  const View = {
+    /** DOM 引用 */
+    el: {},
+
+    init() {
+      // 缓存常用 DOM
+      this.el = {
+        input:    document.getElementById("input"),
+        addBtn:   document.getElementById("addBtn"),
+        list:     document.getElementById("list"),
+        stats:    document.getElementById("stats"),
+        badge:    document.getElementById("badge"),
+        footer:   document.getElementById("footerCount"),
+        clear:    document.getElementById("clearDone"),
+        tabs:     document.querySelectorAll("#tabs button"),
+      };
+
+      this._bind();
+      Service.init();
+      this.render();
+    },
+
+    /** 绑定事件 */
+    _bind() {
+      // 添加：按钮
+      this.el.addBtn.addEventListener("click", () => this._add());
+
+      // 添加：回车
+      this.el.input.addEventListener("keydown", e => {
+        if (e.key === "Enter") this._add();
+      });
+
+      // 筛选标签切换
+      this.el.tabs.forEach(btn => {
+        btn.addEventListener("click", () => {
+          this.el.tabs.forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          Service.setFilter(btn.dataset.filter);
+          this.render();
+        });
+      });
+
+      // 任务列表：复选框 / 删除（事件委托，性能更好）
+      this.el.list.addEventListener("click", e => {
+        const item = e.target.closest(".todo-item");
+        if (!item) return;
+        const id = item.dataset.id;
+
+        if (e.target.closest(".check")) {
+          Service.toggle(id);
+          this.render();
+        }
+
+        if (e.target.closest(".del")) {
+          Service.remove(id);
+          this.render();
+        }
+      });
+
+      // 清除已完成
+      this.el.clear.addEventListener("click", () => {
+        if (Service.doneCount === 0) return;
+        Service.clearDone();
+        this.render();
+      });
+    },
+
+    /** 添加流程 */
+    _add() {
+      const val = this.el.input.value.trim();
+      if (!val) { this.el.input.focus(); return; }
+      Service.add(val);
+      this.el.input.value = "";
+      this.el.input.focus();
+      this.render();
+    },
+
+    /** 渲染全部 */
+    render() {
+      const all   = Service.todos;
+      const list  = Service.getFiltered();
+
+      // 更新徽标
+      this.el.badge.textContent = all.length;
+
+      // 更新统计
+      this.el.stats.textContent = all.length
+        ? `共 ${all.length} 项 · 已完成 ${Service.doneCount} · 剩余 ${Service.undone}`
+        : "";
+
+      // 更新底部
+      this.el.footer.textContent = all.length ? `共 ${all.length} 项` : "";
+
+      // 空状态
+      if (!list.length) {
+        this.el.list.innerHTML =
+          `<li class="empty"><em>${all.length ? '¯\\_(ツ)_/¯' : '📋'}</em>` +
+          (all.length ? "当前没有匹配的任务" : "还没有任务，从输入框开始吧") +
+          "</li>";
+        return;
+      }
+
+      // 全部模式：分组渲染，区分已完成 / 未完成
+      if (Service.filter === "all") {
+        this._renderGrouped(list);
+      } else {
+        this._renderFlat(list);
+      }
+    },
+
+    /** 分组渲染（全部模式） */
+    _renderGrouped(todos) {
+      const undo  = todos.filter(t => !t.done);
+      const done  = todos.filter(t => t.done);
+      const parts = [];
+
+      if (undo.length) {
+        parts.push(`<li class="group-title">未完成 (${undo.length})</li>`);
+        undo.forEach(t => parts.push(this._item(t)));
+      }
+      if (done.length) {
+        parts.push(`<li class="group-title">已完成 (${done.length})</li>`);
+        done.forEach(t => parts.push(this._item(t)));
+      }
+      this.el.list.innerHTML = parts.join("");
+    },
+
+    /** 扁平渲染（未完成 / 已完成单模式） */
+    _renderFlat(todos) {
+      this.el.list.innerHTML = todos.map(t => this._item(t)).join("");
+    },
+
+    /** 生成单条任务 HTML */
+    _item(t) {
+      const checked = t.done ? "done" : "";
+      const titleCls = t.done ? "title done" : "title";
+      return `
+        <li class="todo-item" data-id="${t.id}">
+          <div class="check ${checked}"></div>
+          <span class="${titleCls}">${this._esc(t.title)}</span>
+          <span class="time">${t.createdAt}</span>
+          <button class="del" title="删除">×</button>
+        </li>
+      `;
+    },
+
+    /** 防 XSS — 转义 HTML 特殊字符 */
+    _esc(str) {
+      const d = document.createElement("div");
+      d.textContent = str;
+      return d.innerHTML;
+    },
+  };
+
+
+  /* ============================================================
+     四、启动
+     ============================================================ */
+  document.addEventListener("DOMContentLoaded", () => View.init());
+</script>
+
+</body>
+</html>
